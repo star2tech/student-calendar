@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>StudentCal — Your AI-Powered Academic Planner</title>
+<link rel="icon" type="image/x-icon" href="https://academicscholar-twgtxv855i.edgeone.app/cal/favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0f0e0d;
+  --ink2:#4a4843;
+  --ink3:#9b9793;
+  --cream:#faf8f4;
+  --cream2:#f2efe8;
+  --cream3:#e0dbd0;
+  --accent:#2a5cff;
+  --accent-l:#e8f0ff;
+  --warm:#ff7a3d;
+  --green:#1a9e6e;
+  --r:14px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Sora',sans-serif;background:var(--cream);color:var(--ink);overflow-x:hidden}
+
+/* ═══════════════════════════════
+   CANVAS BACKGROUND
+═══════════════════════════════ */
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* ═══════════════════════════════
+   NAV
+═══════════════════════════════ */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 2.5rem;height:64px;display:flex;align-items:center;justify-content:space-between;transition:background .4s,box-shadow .4s}
+nav.scrolled{background:rgba(250,248,244,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 1px 0 var(--cream3)}
+.logo{font-family:'Instrument Serif',serif;font-size:23px;color:var(--ink);text-decoration:none;letter-spacing:-.01em;position:relative;z-index:1}
+.logo span{color:var(--accent)}
+.nav-links{display:flex;align-items:center;gap:2.25rem}
+.nav-links a{font-size:13.5px;font-weight:400;color:var(--ink2);text-decoration:none;transition:color .2s;cursor:pointer;position:relative;padding-bottom:8px}
+.nav-links a:hover,.nav-links a.active{color:var(--ink)}
+.nav-links a .squiggle{position:absolute;bottom:-1px;left:0;width:100%;height:6px;overflow:visible;pointer-events:none}
+.nav-links a .squiggle path{stroke:var(--accent);stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:80;stroke-dashoffset:80;transition:stroke-dashoffset .45s cubic-bezier(.16,1,.3,1)}
+.nav-links a:hover .squiggle path{stroke-dashoffset:0}
+.nav-cta{font-size:13px;font-weight:500;padding:8px 20px;background:var(--ink);color:var(--cream);border-radius:100px;text-decoration:none;transition:background .2s,transform .15s,box-shadow .2s;cursor:pointer}
+.nav-cta:hover{background:#2a2824;transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.15)}
+
+/* ═══════════════════════════════
+   PAGES
+═══════════════════════════════ */
+.page{display:none;position:relative;z-index:1}
+.page.active{display:block}
+
+/* ═══════════════════════════════
+   HERO
+═══════════════════════════════ */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:120px 2rem 100px;text-align:center}
+.hero-tag{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.7);border:1px solid var(--cream3);border-radius:100px;padding:6px 16px;font-size:12px;font-weight:500;color:var(--ink2);margin-bottom:2.25rem;backdrop-filter:blur(8px);opacity:0;animation:fadeUp .6s .1s forwards}
+.hero-tag .pulse{width:7px;height:7px;border-radius:50%;background:var(--accent);position:relative}
+.hero-tag .pulse::after{content:'';position:absolute;inset:-3px;border-radius:50%;background:var(--accent);opacity:.3;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:.3}50%{transform:scale(1.8);opacity:0}}
+h1.headline{font-family:'Instrument Serif',serif;font-size:clamp(3rem,7.5vw,5.75rem);line-height:1.06;letter-spacing:-.035em;color:var(--ink);margin-bottom:1.75rem;max-width:820px;opacity:0;animation:fadeUp .75s .25s forwards}
+h1.headline em{font-style:italic;color:var(--accent)}
+h1.headline .line2{display:block}
+.hero-sub{font-size:clamp(15px,1.8vw,18px);color:var(--ink2);font-weight:300;line-height:1.75;max-width:520px;margin:0 auto 3rem;opacity:0;animation:fadeUp .7s .4s forwards}
+.hero-actions{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;opacity:0;animation:fadeUp .7s .55s forwards}
+.btn-primary{font-family:'Sora',sans-serif;font-size:14px;font-weight:500;padding:13px 28px;background:var(--ink);color:var(--cream);border-radius:100px;text-decoration:none;border:none;cursor:pointer;transition:background .2s,transform .15s,box-shadow .2s;display:inline-flex;align-items:center;gap:8px}
+.btn-primary:hover{background:#2a2824;transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.18)}
+.btn-primary .arrow{transition:transform .2s}
+.btn-primary:hover .arrow{transform:translateX(3px)}
+.btn-ghost{font-family:'Sora',sans-serif;font-size:14px;font-weight:400;padding:13px 24px;background:rgba(255,255,255,.6);color:var(--ink);border-radius:100px;border:1px solid var(--cream3);cursor:pointer;transition:background .2s,transform .15s;backdrop-filter:blur(8px)}
+.btn-ghost:hover{background:rgba(255,255,255,.9);transform:translateY(-2px)}
+
+/* ═══════════════════════════════
+   FEATURE PREVIEW CARD
+═══════════════════════════════ */
+.preview-wrap{max-width:900px;margin:4rem auto 0;opacity:0;animation:fadeUp .8s .7s forwards}
+.preview-card{background:rgba(255,255,255,.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.9);border-radius:20px;padding:1.5rem;box-shadow:0 24px 80px rgba(0,0,0,.08),0 0 0 1px rgba(255,255,255,.5) inset}
+.preview-bar{display:flex;align-items:center;gap:8px;margin-bottom:1.25rem}
+.preview-dot{width:10px;height:10px;border-radius:50%}
+.preview-dot:nth-child(1){background:#ff5f57}
+.preview-dot:nth-child(2){background:#febc2e}
+.preview-dot:nth-child(3){background:#28c840}
+.preview-bar span{font-size:12px;color:var(--ink3);margin-left:auto;font-family:monospace}
+.mini-cal-preview{display:grid;grid-template-columns:48px repeat(5,1fr);gap:2px;font-size:11px}
+.mcp-head{text-align:center;padding:5px 3px;font-weight:600;font-size:10px;color:var(--ink3);letter-spacing:.05em}
+.mcp-time{font-size:9px;color:var(--ink3);text-align:right;padding:3px 5px 0 0;height:40px;font-family:monospace;border-bottom:1px solid var(--cream2)}
+.mcp-cell{height:40px;border-left:1px solid var(--cream2);border-bottom:1px solid var(--cream2);padding:2px;border-radius:3px}
+.mcp-ev{border-radius:3px;padding:2px 5px;font-size:10px;font-weight:500;white-space:nowrap;overflow:visible;text-overflow:ellipsis;animation:fadeIn .4s both;transition:transform .2s,box-shadow .2s}
+.mcp-ev:hover{transform:scale(1.15);box-shadow:0 4px 12px rgba(15,14,13,0.22)}
+.mcp-ev.blue{background:#dbeafe;color:#1e40af}
+.mcp-ev.red{background:#fee2e2;color:#dc2626}
+.mcp-ev.amber{background:#fef3c7;color:#b45309}
+.mcp-ev.purple{background:#ede9fe;color:#6d28d9}
+@keyframes fadeIn{from{opacity:0;transform:scaleY(.8)}to{opacity:1;transform:scaleY(1)}}
+.mcp-ev:nth-child(1){animation-delay:.9s}
+.mcp-ev:nth-child(2){animation-delay:1.2s}
+.mcp-ev:nth-child(3){animation-delay:1.5s}
+
+/* ═══════════════════════════════
+   FEATURES SECTION
+═══════════════════════════════ */
+section{padding:100px 2rem;position:relative;z-index:1}
+.section-label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:1rem}
+.section-title{font-family:'Instrument Serif',serif;font-size:clamp(2rem,4vw,3rem);line-height:1.15;letter-spacing:-.02em;color:var(--ink);margin-bottom:1.25rem}
+.section-sub{font-size:16px;color:var(--ink2);font-weight:300;line-height:1.75;max-width:500px}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem;max-width:1100px;margin:4rem auto 0}
+.feat-card{background:rgba(255,255,255,.65);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.85);border-radius:18px;padding:2rem;transition:transform .25s,box-shadow .25s;cursor:default}
+.feat-card:hover{transform:translateY(-4px);box-shadow:0 16px 48px rgba(0,0,0,.08)}
+.feat-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:1.25rem}
+.feat-icon.blue{background:#dbeafe}
+.feat-icon.amber{background:#fef3c7}
+.feat-icon.green{background:#d1fae5}
+.feat-icon.purple{background:#ede9fe}
+.feat-title{font-size:16px;font-weight:600;margin-bottom:.6rem;color:var(--ink)}
+.feat-desc{font-size:14px;color:var(--ink2);line-height:1.7;font-weight:300}
+
+/* ═══════════════════════════════
+   HOW IT WORKS
+═══════════════════════════════ */
+.how-section{max-width:1000px;margin:0 auto;text-align:center}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;margin-top:4rem}
+.step{position:relative}
+.step-num{font-family:'Instrument Serif',serif;font-size:4rem;color:var(--cream3);line-height:1;margin-bottom:1rem;display:block}
+.step-title{font-size:16px;font-weight:600;margin-bottom:.6rem}
+.step-desc{font-size:14px;color:var(--ink2);line-height:1.7;font-weight:300}
+.step-connector{position:absolute;top:28px;right:-1rem;width:2rem;height:1px;background:var(--cream3)}
+.step:last-child .step-connector{display:none}
+
+/* ═══════════════════════════════
+   QUOTE / TESTIMONIAL
+═══════════════════════════════ */
+.quote-section{background:var(--ink);border-radius:24px;max-width:1100px;margin:0 auto;padding:80px;overflow:hidden;position:relative}
+.quote-bg-text{position:absolute;top:-20px;left:-10px;font-family:'Instrument Serif',serif;font-size:220px;color:rgba(255,255,255,.04);line-height:1;pointer-events:none;user-select:none}
+blockquote{font-family:'Instrument Serif',serif;font-size:clamp(1.5rem,3vw,2.25rem);line-height:1.4;color:rgba(255,255,255,.9);font-style:italic;position:relative;z-index:1;max-width:700px;margin-bottom:2rem}
+.quote-author{font-size:14px;color:rgba(255,255,255,.45);font-weight:400;position:relative;z-index:1}
+.quote-author strong{color:rgba(255,255,255,.75);font-weight:500}
+
+/* ═══════════════════════════════
+   CTA SECTION
+═══════════════════════════════ */
+.cta-section{text-align:center;padding:120px 2rem}
+.cta-title{font-family:'Instrument Serif',serif;font-size:clamp(2.5rem,5vw,4rem);line-height:1.1;letter-spacing:-.03em;margin-bottom:1.5rem}
+.cta-title em{font-style:italic;color:var(--accent)}
+.cta-sub{font-size:16px;color:var(--ink2);font-weight:300;margin-bottom:2.5rem}
+
+/* ═══════════════════════════════
+   FOOTER
+═══════════════════════════════ */
+footer{border-top:1px solid var(--cream3);padding:2.5rem;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--ink3);position:relative;z-index:1;flex-wrap:wrap;gap:1rem}
+footer a{color:var(--ink3);text-decoration:none;cursor:pointer;transition:color .2s}
+footer a:hover{color:var(--ink)}
+.footer-links{display:flex;gap:2rem}
+
+/* ═══════════════════════════════
+   ABOUT PAGE
+═══════════════════════════════ */
+.about-hero{padding:160px 2rem 80px;max-width:900px;margin:0 auto}
+.about-hero .page-label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:1.25rem}
+.about-hero h2{font-family:'Instrument Serif',serif;font-size:clamp(2.5rem,5vw,4rem);line-height:1.1;letter-spacing:-.03em;margin-bottom:2rem}
+.about-hero h2 em{font-style:italic}
+.about-body{max-width:640px}
+.about-body p{font-size:17px;color:var(--ink2);line-height:1.8;font-weight:300;margin-bottom:1.5rem}
+.about-body p strong{color:var(--ink);font-weight:500}
+.about-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;max-width:900px;margin:4rem auto;padding:0 2rem}
+.about-stat{background:rgba(255,255,255,.65);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.85);border-radius:18px;padding:2rem;text-align:center}
+.about-stat .num{font-family:'Instrument Serif',serif;font-size:3.5rem;color:var(--ink);line-height:1}
+.about-stat .stat-label{font-size:13px;color:var(--ink3);margin-top:.5rem;font-weight:400}
+.team-section{max-width:900px;margin:0 auto;padding:4rem 2rem}
+.team-section h3{font-family:'Instrument Serif',serif;font-size:2rem;margin-bottom:2.5rem;letter-spacing:-.02em}
+.team-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.25rem}
+.team-card{background:rgba(255,255,255,.65);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.85);border-radius:18px;padding:1.75rem;transition:transform .25s}
+.team-card:hover{transform:translateY(-3px)}
+.team-avatar{width:54px;height:54px;border-radius:50%;margin-bottom:1rem;display:flex;align-items:center;justify-content:center;font-family:'Instrument Serif',serif;font-size:1.5rem;font-style:italic;color:#fff}
+.av1{background:linear-gradient(135deg,#2a5cff,#7c3aed)}
+.av2{background:linear-gradient(135deg,#ff7a3d,#ff3d77)}
+.av3{background:linear-gradient(135deg,#1a9e6e,#2a5cff)}
+.team-name{font-size:15px;font-weight:600;margin-bottom:3px}
+.team-role{font-size:12px;color:var(--accent);font-weight:500;margin-bottom:.75rem}
+.team-bio{font-size:13px;color:var(--ink2);line-height:1.7;font-weight:300}
+.values-section{max-width:900px;margin:0 auto;padding:4rem 2rem 6rem}
+.values-section h3{font-family:'Instrument Serif',serif;font-size:2rem;margin-bottom:2.5rem;letter-spacing:-.02em}
+.values-list{display:flex;flex-direction:column;gap:1.5rem}
+.value-item{display:flex;gap:1.5rem;align-items:flex-start;padding:1.5rem;background:rgba(255,255,255,.5);border-radius:16px;border:1px solid rgba(255,255,255,.8);transition:background .2s}
+.value-item:hover{background:rgba(255,255,255,.75)}
+.value-num{font-family:'Instrument Serif',serif;font-size:2rem;color:var(--cream3);line-height:1;flex-shrink:0;width:40px}
+.value-content h4{font-size:15px;font-weight:600;margin-bottom:.4rem}
+.value-content p{font-size:14px;color:var(--ink2);line-height:1.7;font-weight:300}
+
+/* ═══════════════════════════════
+   CONTACT PAGE
+═══════════════════════════════ */
+.contact-hero{padding:160px 2rem 60px;max-width:900px;margin:0 auto}
+.contact-hero h2{font-family:'Instrument Serif',serif;font-size:clamp(2.5rem,5vw,4rem);line-height:1.1;letter-spacing:-.03em;margin-bottom:1rem}
+.contact-hero h2 em{font-style:italic;color:var(--accent)}
+.contact-hero p{font-size:17px;color:var(--ink2);font-weight:300;line-height:1.75}
+.contact-grid{display:grid;grid-template-columns:1fr 1.4fr;gap:3rem;max-width:900px;margin:4rem auto 6rem;padding:0 2rem;align-items:start}
+.contact-info{display:flex;flex-direction:column;gap:1.5rem}
+.contact-card{background:rgba(255,255,255,.65);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.85);border-radius:16px;padding:1.5rem;display:flex;gap:1rem;align-items:flex-start;transition:transform .2s}
+.contact-card:hover{transform:translateY(-2px)}
+.contact-icon{width:38px;height:38px;border-radius:10px;background:var(--accent-l);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.contact-label{font-size:12px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.contact-val{font-size:14px;color:var(--ink);font-weight:400}
+.contact-form{background:rgba(255,255,255,.75);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.9);border-radius:20px;padding:2rem;box-shadow:0 8px 40px rgba(0,0,0,.05)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.fg{margin-bottom:1.25rem}
+.fg label{font-size:12px;font-weight:500;color:var(--ink2);display:block;margin-bottom:6px;letter-spacing:.02em}
+.fg input,.fg textarea,.fg select{width:100%;font-size:14px;font-family:'Sora',sans-serif;padding:11px 14px;border:1px solid var(--cream3);border-radius:10px;outline:none;background:rgba(255,255,255,.8);color:var(--ink);transition:border .2s,box-shadow .2s;resize:none}
+.fg input:focus,.fg textarea:focus,.fg select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(42,92,255,.1)}
+.fg textarea{min-height:120px;line-height:1.6}
+.form-submit{width:100%;font-family:'Sora',sans-serif;font-size:14px;font-weight:500;padding:13px;background:var(--ink);color:var(--cream);border:none;border-radius:100px;cursor:pointer;transition:background .2s,transform .15s,box-shadow .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.form-submit:hover{background:#2a2824;transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.form-submit.sent{background:var(--green)}
+.success-msg{display:none;text-align:center;padding:2rem;font-size:15px;color:var(--green);font-weight:500}
+
+/* ═══════════════════════════════
+   SCROLL ANIMATIONS
+═══════════════════════════════ */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .65s cubic-bezier(.16,1,.3,1),transform .65s cubic-bezier(.16,1,.3,1)}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-delay-1{transition-delay:.1s}
+.reveal-delay-2{transition-delay:.2s}
+.reveal-delay-3{transition-delay:.3s}
+.reveal-delay-4{transition-delay:.4s}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+@media(max-width:700px){
+  .steps{grid-template-columns:1fr}
+  .step-connector{display:none}
+  .contact-grid{grid-template-columns:1fr}
+  .form-row{grid-template-columns:1fr}
+  .quote-section{padding:50px 2rem}
+  nav{padding:0 1.25rem}
+}
+
+</style>
+</head>
+<body>
+
+<!-- Animated Canvas Background -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- NAV -->
+<nav id="navbar">
+  <a class="logo" onclick="showPage('home')">Student<span>Cal</span></a>
+  <div class="nav-links">
+    <a onclick="showPage('home')" class="active" id="nav-home">Home<svg class="squiggle" viewBox="0 0 40 6" preserveAspectRatio="none"><path d="M0,4 C5,0 10,6 15,3 C20,0 25,6 30,3 C35,0 38,4 40,3"/></svg></a>
+    <a onclick="showPage('about')" id="nav-about">About<svg class="squiggle" viewBox="0 0 40 6" preserveAspectRatio="none"><path d="M0,4 C5,0 10,6 15,3 C20,0 25,6 30,3 C35,0 38,4 40,3"/></svg></a>
+    <a onclick="showPage('contact')" id="nav-contact">Contact<svg class="squiggle" viewBox="0 0 50 6" preserveAspectRatio="none"><path d="M0,4 C6,0 12,6 18,3 C24,0 30,6 36,3 C42,0 47,4 50,3"/></svg></a>
+    <a class="nav-cta" href="studentcal.html" target="_blank">Open Calendar ↗</a>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════
+     HOME PAGE
+════════════════════════════════════════ -->
+<div class="page active" id="page-home">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-tag">
+      <div class="pulse"></div>
+      AI-powered academic scheduling
+    </div>
+    <h1 class="headline">
+      Your semester,<br>
+      <em>finally organized.</em>
+    </h1>
+    <p class="hero-sub">StudentCal uses AI to turn plain-English descriptions into calendar events instantly. No more juggling apps, sticky notes, or forgotten deadlines.</p>
+    <div class="hero-actions">
+      <a class="btn-primary" href="studentcal.html" style="text-decoration:none">
+        Get Started Free <span class="arrow">→</span>
+      </a>
+      <button class="btn-ghost" onclick="showPage('about')">Learn more</button>
+    </div>
+
+    <!-- Mini calendar preview -->
+    <div class="preview-wrap">
+      <div class="preview-card">
+        <div class="preview-bar">
+          <div class="preview-dot"></div>
+          <div class="preview-dot"></div>
+          <div class="preview-dot"></div>
+          <span>studentcal.app</span>
+        </div>
+        <div class="mini-cal-preview">
+          <div class="mcp-head"></div>
+          <div class="mcp-head">MON</div>
+          <div class="mcp-head">TUE</div>
+          <div class="mcp-head">WED</div>
+          <div class="mcp-head">THU</div>
+          <div class="mcp-head">FRI</div>
+
+          <div class="mcp-time">9am</div>
+          <div class="mcp-cell"><div class="mcp-ev blue">Calculus Lec.</div></div>
+          <div class="mcp-cell"></div>
+          <div class="mcp-cell"><div class="mcp-ev blue">CS 301</div></div>
+          <div class="mcp-cell"></div>
+          <div class="mcp-cell"></div>
+
+          <div class="mcp-time">11am</div>
+          <div class="mcp-cell"></div>
+          <div class="mcp-cell"><div class="mcp-ev amber">Essay due</div></div>
+          <div class="mcp-cell"></div>
+          <div class="mcp-cell"><div class="mcp-ev amber">HW #4 due</div></div>
+          <div class="mcp-cell"></div>
+
+          <div class="mcp-time">2pm</div>
+          <div class="mcp-cell"></div>
+          <div class="mcp-cell"></div>
+          <div class="mcp-cell"></div>
+          <div class="mcp-cell"></div>
+          <div class="mcp-cell"><div class="mcp-ev red">Chem Exam</div></div>
+
+          <div class="mcp-time">4pm</div>
+          <div class="mcp-cell"></div>
+          <div class="mcp-cell"></div>
+          <div class="mcp-cell"><div class="mcp-ev purple">Study group</div></div>
+          <div class="mcp-cell"></div>
+          <div class="mcp-cell"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <section style="padding-top:60px">
+    <div style="max-width:1100px;margin:0 auto">
+      <div class="reveal">
+        <div class="section-label">Features</div>
+        <h2 class="section-title">Everything a student actually needs</h2>
+        <p class="section-sub">Built lean, designed for real academic life — not for a boardroom.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feat-card reveal reveal-delay-1">
+          <div class="feat-icon blue">🗓️</div>
+          <div class="feat-title">Natural Language Scheduling</div>
+          <div class="feat-desc">Just type "Chemistry exam next Friday at 2pm" and watch it appear on your calendar instantly. No forms to fill out.</div>
+        </div>
+        <div class="feat-card reveal reveal-delay-2">
+          <div class="feat-icon amber">✅</div>
+          <div class="feat-title">Tasks & To-Do List</div>
+          <div class="feat-desc">Capture assignments and side-quests with priorities and due dates, sorted exactly how your brain works best.</div>
+        </div>
+        <div class="feat-card reveal reveal-delay-3">
+          <div class="feat-icon green">🔥</div>
+          <div class="feat-title">Habits & Streaks</div>
+          <div class="feat-desc">Track daily habits and goals, watch your streaks climb, and build the consistency that actually moves the needle.</div>
+        </div>
+        <div class="feat-card reveal reveal-delay-4">
+          <div class="feat-icon purple">⏱️</div>
+          <div class="feat-title">Pomodoro Focus Timer</div>
+          <div class="feat-desc">Built-in work/break timer tuned to your study load — locks in deep focus and tracks every session you complete.</div>
+        </div>
+        <div class="feat-card reveal reveal-delay-1">
+          <div class="feat-icon blue">📊</div>
+          <div class="feat-title">Analytics Dashboard</div>
+          <div class="feat-desc">See your weekly events, completion rates, focus hours, and habit consistency in one clean, personalized overview.</div>
+        </div>
+        <div class="feat-card reveal reveal-delay-2">
+          <div class="feat-icon amber">📌</div>
+          <div class="feat-title">Week & Month Views</div>
+          <div class="feat-desc">Switch between a tight weekly focus and a broad monthly overview to plan ahead without losing the details.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section style="background:rgba(255,255,255,.4);backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,.7);border-bottom:1px solid rgba(255,255,255,.7)">
+    <div class="how-section reveal">
+      <div class="section-label">How it works</div>
+      <h2 class="section-title">Three steps to a stress-free semester</h2>
+      <div class="steps">
+        <div class="step reveal reveal-delay-1">
+          <span class="step-num">01</span>
+          <div class="step-title">Open the app</div>
+          <div class="step-desc">Hit "Open Calendar" and you're in. No sign-up, no download, no nonsense.</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step reveal reveal-delay-2">
+          <span class="step-num">02</span>
+          <div class="step-title">Describe your event</div>
+          <div class="step-desc">Type it like you'd text a friend. The AI figures out the date, time, and type for you.</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step reveal reveal-delay-3">
+          <span class="step-num">03</span>
+          <div class="step-title">Watch it appear</div>
+          <div class="step-desc">Your event lands on the calendar in seconds. Edit it, delete it, or keep going.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quote -->
+  <section>
+    <div class="quote-section reveal">
+      <div class="quote-bg-text">"</div>
+      <blockquote>"I used to miss deadlines because I had seventeen different places I was supposed to be keeping track of things. Now I just tell my calendar what's happening and it handles the rest."</blockquote>
+      <div class="quote-author"><strong>Maya R.</strong> — Junior, Computer Science</div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <div class="cta-section reveal">
+    <h2 class="cta-title">Ready to stop<br><em>losing track?</em></h2>
+    <p class="cta-sub">It's free, it's fast, and it actually works.</p>
+    <a class="btn-primary" href="studentcal.html" style="font-size:15px;padding:15px 32px;margin:0 auto;display:inline-flex;text-decoration:none">
+      Open StudentCal Free <span class="arrow">→</span>
+    </a>
+  </div>
+
+  <footer>
+    <span>© 2026 StudentCal. Made by Hiwot Tsegaye.</span>
+    <div class="footer-links">
+      <a onclick="showPage('home')">Home</a>
+      <a onclick="showPage('about')">About</a>
+      <a onclick="showPage('contact')">Contact</a>
+    </div>
+  </footer>
+</div>
+
+<!-- ════════════════════════════════════════
+     ABOUT PAGE
+════════════════════════════════════════ -->
+<div class="page" id="page-about">
+  <div class="about-hero">
+    <div class="page-label reveal">My story</div>
+    <h2 class="reveal">I built the planner<br><em>I wished existed.</em></h2>
+    <div class="about-body reveal">
+      <p>I'm <strong>Hiwot Tsegaye</strong>, a 14-year-old web developer. StudentCal started because I was genuinely struggling to keep up with all my schoolwork — assignments were piling up, deadlines were sneaking up on me, and I kept doing everything last minute.</p>
+      <p>I looked for something to help, but every decent planner app wanted you to <strong>pay for it</strong>. That felt wrong to me. Students are already stressed enough — they shouldn't have to spend money just to stay organized.</p>
+      <p>So I built my own. It's free, it works in your browser, and you can just <strong>tell it what you need</strong> in plain English. No subscriptions, no sign-ups, no nonsense. Just you and your calendar.</p>
+    </div>
+  </div>
+
+  <div class="about-grid">
+    <div class="about-stat reveal">
+      <div class="num">100%</div>
+      <div class="stat-label">Free, always</div>
+    </div>
+    <div class="about-stat reveal reveal-delay-1">
+      <div class="num">0</div>
+      <div class="stat-label">Accounts required</div>
+    </div>
+    <div class="about-stat reveal reveal-delay-2">
+      <div class="num">14</div>
+      <div class="stat-label">Age of the founder</div>
+    </div>
+    <div class="about-stat reveal reveal-delay-3">
+      <div class="num">∞</div>
+      <div class="stat-label">Events you can add</div>
+    </div>
+  </div>
+
+  <div class="team-section">
+    <h3 class="reveal">The person behind it</h3>
+    <div class="team-cards" style="max-width:320px">
+      <div class="team-card reveal" style="display:flex;flex-direction:column;gap:.25rem">
+        <div class="team-avatar av1" style="width:62px;height:62px;font-size:1.75rem">H</div>
+        <div class="team-name" style="font-size:17px;margin-top:.25rem">Hiwot Tsegaye</div>
+        <div class="team-role">Founder, Designer &amp; Developer</div>
+        <div class="team-bio" style="margin-top:.5rem">14-year-old web developer who got tired of doing homework last minute because every planner cost money. Built StudentCal to fix that — for herself and anyone else who needs it.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="values-section">
+    <h3 class="reveal">What I believe in</h3>
+    <div class="values-list">
+      <div class="value-item reveal">
+        <div class="value-num">1</div>
+        <div class="value-content">
+          <h4>Good tools should be free</h4>
+          <p>Staying organized shouldn't cost anything. Every student — regardless of their budget — deserves software that actually helps them keep up with their work.</p>
+        </div>
+      </div>
+      <div class="value-item reveal reveal-delay-1">
+        <div class="value-num">2</div>
+        <div class="value-content">
+          <h4>Simple beats complicated, every time</h4>
+          <p>I didn't want to build another app with a hundred features no one uses. Just type what you need, see it on your calendar, move on with your day.</p>
+        </div>
+      </div>
+      <div class="value-item reveal reveal-delay-2">
+        <div class="value-num">3</div>
+        <div class="value-content">
+          <h4>Your data stays yours</h4>
+          <p>Everything is saved right in your browser. No accounts, no servers, no one looking at your schedule. It's just yours.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>© 2026 StudentCal. Made by Hiwot Tsegaye.</span>
+    <div class="footer-links">
+      <a onclick="showPage('home')">Home</a>
+      <a onclick="showPage('about')">About</a>
+      <a onclick="showPage('contact')">Contact</a>
+    </div>
+  </footer>
+</div>
+
+<!-- ════════════════════════════════════════
+     CONTACT PAGE
+════════════════════════════════════════ -->
+
+<div class="page" id="page-contact">
+  <div class="contact-hero">
+    <div class="page-label reveal" style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:1.25rem">Get in touch</div>
+    <h2 class="reveal">I actually read<br><em>every message.</em></h2>
+    <p class="reveal" style="font-size:17px;color:var(--ink2);font-weight:300;line-height:1.75;margin-top:1rem">Got feedback, a bug to report, or just want to say hi? I built this solo and I genuinely love hearing from other students.</p>
+  </div>
+
+  <div class="contact-grid">
+    <div class="contact-info">
+      <div class="contact-card reveal">
+        <div class="contact-icon">✉️</div>
+        <div>
+          <div class="contact-label">Email</div>
+          <div class="contact-val">htse2677@gmail.com</div>
+        </div>
+      </div>
+      <div class="contact-card reveal reveal-delay-1">
+        <div class="contact-icon">💬</div>
+        <div>
+          <div class="contact-label">Response time</div>
+          <div class="contact-val">Usually within 24 hours</div>
+        </div>
+      </div>
+      <div class="contact-card reveal reveal-delay-2">
+        <div class="contact-icon">📸</div>
+        <div>
+          <div class="contact-label">Instagram</div>
+          <div class="contact-val"><a href="https://instagram.com/hiwots_life" target="_blank" style="color:var(--accent);text-decoration:none">@hiwots_life</a></div>
+        </div>
+      </div>
+      <div class="contact-card reveal reveal-delay-3">
+        <div class="contact-icon">🌐</div>
+        <div>
+          <div class="contact-label">Portfolio</div>
+          <div class="contact-val"><a href="" target="_blank" style="color:var(--accent);text-decoration:none">hiwot.dev</a></div>
+        </div>
+      </div>
+    </div>
+<form
+  action="https://formspree.io/f/maqlpvjb"
+  method="POST"
+>
+    <div class="contact-form reveal">
+      <div id="form-fields">
+        <div class="form-row">
+          <div class="fg"><label>First name</label><input type="text" name="first_name" placeholder="Sofia"/></div>
+          <div class="fg"><label>Last name</label><input type="text" name="last_name" placeholder="Chen"/></div>
+        </div>
+        <div class="fg"><label>Email</label><input type="email" name="email" placeholder="you@university.edu"/></div>
+        <div class="fg">
+          <label>What's this about?</label>
+          <select name="subject">
+            <option>General feedback</option>
+            <option>Bug report</option>
+            <option>Feature request</option>
+            <option>School / institution</option>
+            <option>Just saying hi</option>
+          </select>
+        </div>
+        <div class="fg"><label>Message</label><textarea name="message" placeholder="Tell me what's on your mind..."></textarea></div>
+        <button type="submit" class="form-submit" id="submitBtn">
+          Send message <span>→</span>
+        </button>
+      </div>
+      </form>
+      <div class="success-msg" id="successMsg">
+        <div style="font-size:2rem;margin-bottom:.75rem">✉️</div>
+        Message sent! I'll get back to you soon.
+
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>© 2026 StudentCal. Made with care.</span>
+    <div class="footer-links">
+      <a onclick="showPage('home')">Home</a>
+      <a onclick="showPage('about')">About</a>
+      <a onclick="showPage('contact')">Contact</a>
+    </div>
+  </footer>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   CANVAS BACKGROUND — flowing mesh
+═══════════════════════════════════════ */
+(function(){
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, t = 0;
+
+  const palette = [
+    {r:180,g:200,b:255}, // soft blue
+    {r:255,g:210,b:180}, // warm peach
+    {r:170,g:230,b:200}, // mint
+    {r:230,g:200,b:255}, // lavender
+    {r:255,g:235,b:170}, // warm gold
+  ];
+
+  const orbs = palette.map((col, i) => ({
+    col,
+    x: 0.15 + (i / palette.length) * 0.7,
+    y: 0.15 + (i / palette.length) * 0.6,
+    r: 0.28 + Math.random() * 0.14,
+    ox: (Math.random()-0.5)*0.22,
+    oy: (Math.random()-0.5)*0.22,
+    speed: 0.00018 + Math.random()*0.00014,
+    phase: Math.random()*Math.PI*2
+  }));
+
+  function resize(){
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+
+    // Cream base
+    ctx.fillStyle = '#faf8f4';
+    ctx.fillRect(0,0,W,H);
+
+    // Draw each orb with soft radial gradients
+    orbs.forEach(orb => {
+      const cx = (orb.x + Math.sin(t * orb.speed * 1.3 + orb.phase) * orb.ox) * W;
+      const cy = (orb.y + Math.cos(t * orb.speed + orb.phase * 1.1) * orb.oy) * H;
+      const rad = orb.r * Math.min(W, H);
+
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
+      grad.addColorStop(0, `rgba(${orb.col.r},${orb.col.g},${orb.col.b},0.38)`);
+      grad.addColorStop(0.5, `rgba(${orb.col.r},${orb.col.g},${orb.col.b},0.14)`);
+      grad.addColorStop(1, `rgba(${orb.col.r},${orb.col.g},${orb.col.b},0)`);
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, rad, 0, Math.PI*2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+    });
+
+    // Subtle dot grid
+    ctx.save();
+    ctx.globalAlpha = 0.055;
+    const gsize = 36;
+    for(let gx = gsize/2; gx < W; gx += gsize){
+      for(let gy = gsize/2; gy < H; gy += gsize){
+        ctx.beginPath();
+        ctx.arc(gx, gy, 1, 0, Math.PI*2);
+        ctx.fillStyle = '#8a8070';
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+
+    t++;
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  draw();
+})();
+
+/* ═══════════════════════════════════════
+   PAGE NAVIGATION
+═══════════════════════════════════════ */
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.nav-links a[id^="nav-"]').forEach(a => a.classList.remove('active'));
+  const navEl = document.getElementById('nav-'+name);
+  if(navEl) navEl.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+  setTimeout(checkReveal, 80);
+}
+
+function openApp(){
+  // Opens student-calendar.html if hosted alongside, otherwise alert
+  try { window.open('student-calendar.html','_blank'); }
+  catch(e){ alert('Place student-calendar.html in the same folder and open this file from a local server or browser.'); }
+}
+
+/* ═══════════════════════════════════════
+   NAVBAR SCROLL
+═══════════════════════════════════════ */
+window.addEventListener('scroll', function(){
+  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 20);
+});
+
+/* ═══════════════════════════════════════
+   SCROLL REVEAL
+═══════════════════════════════════════ */
+function checkReveal(){
+  const els = document.querySelectorAll('.reveal:not(.visible)');
+  els.forEach(el => {
+    const rect = el.getBoundingClientRect();
+    if(rect.top < window.innerHeight * 0.88){
+      el.classList.add('visible');
+    }
+  });
+}
+window.addEventListener('scroll', checkReveal, {passive:true});
+checkReveal();
+
+/* ═══════════════════════════════════════
+   CONTACT FORM
+═══════════════════════════════════════ */
+function handleSubmit(){
+  const btn = document.getElementById('submitBtn');
+  btn.textContent = 'Sending…';
+  btn.disabled = true;
+  setTimeout(()=>{
+    document.getElementById('form-fields').style.display = 'none';
+    document.getElementById('successMsg').style.display = 'block';
+  }, 1200);
+}
+
+/* Tilting effect for preview card */
+const previewCard = document.querySelector('.preview-card');
+
+if (previewCard) {
+  previewCard.addEventListener('mousemove', e => {
+    const rect = previewCard.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const xc = rect.width / 2;
+    const yc = rect.height / 2;
+    const dx = x - xc;
+    const dy = y - yc;
+    previewCard.style.transform = `perspective(1000px) rotateX(${-dy/15}deg) rotateY(${dx/15}deg) scale(1.02)`;
+    previewCard.style.transition = 'transform 0.1s ease-out';
+  });
+
+  previewCard.addEventListener('mouseleave', () => {
+    previewCard.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)';
+    previewCard.style.transition = 'transform 0.5s ease';
+  });
+}
+</script>
+</body>
+</html>
